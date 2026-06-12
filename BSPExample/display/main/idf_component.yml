@@ -1,0 +1,6 @@
+dependencies:
+  espressif/esp32_s3_lcd_ev_board:
+    version: ">=4.1.0"
+  espressif/esp_codec_dev: "~1.5.0"
+  espressif/button: "^4.0.0"
+description: BSP Display example

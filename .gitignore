@@ -1,0 +1,28 @@
+# ESP-IDF build output
+build/
+sdkconfig
+sdkconfig.old
+
+# VS Code workspace files
+*.code-workspace
+.vscode/
+
+# Temporary / local files
+*.zip
+*.7z
+*.rar
+*.tar
+*.gz
+*.log
+*.tmp
+*.bak
+
+# Python cache
+__pycache__/
+*.pyc
+
+# ESP-IDF test configs
+sdkconfig.ci.*
+
+/managed_components/
+**/managed_components/
