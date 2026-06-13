@@ -372,60 +372,60 @@ while (1) {
     ESP_LOGI(TAG, "Turn on LCD backlight");
     example_bsp_set_lcd_backlight(EXAMPLE_LCD_BK_LIGHT_ON_LEVEL);
 
-//     ESP_LOGI(TAG, "Initialize LVGL library");
-//     lv_init();
-//     // create a lvgl display
-//     lv_display_t *display = lv_display_create(EXAMPLE_LCD_H_RES, EXAMPLE_LCD_V_RES);
-//     // associate the rgb panel handle to the display
-//     lv_display_set_user_data(display, panel_handle);
-//     // set color depth
-//     lv_display_set_color_format(display, EXAMPLE_LV_COLOR_FORMAT);
+    ESP_LOGI(TAG, "Initialize LVGL library");
+    lv_init();
+    // create a lvgl display
+    lv_display_t *display = lv_display_create(EXAMPLE_LCD_H_RES, EXAMPLE_LCD_V_RES);
+    // associate the rgb panel handle to the display
+    lv_display_set_user_data(display, panel_handle);
+    // set color depth
+    lv_display_set_color_format(display, EXAMPLE_LV_COLOR_FORMAT);
 
-//     ESP_LOGI(TAG, "Bus Width = %d", EXAMPLE_DATA_BUS_WIDTH);
+    ESP_LOGI(TAG, "Bus Width = %d", EXAMPLE_DATA_BUS_WIDTH);
 
-//     // create draw buffers
-//     void *buf1 = NULL;
-//     void *buf2 = NULL;
-// #if CONFIG_EXAMPLE_USE_DOUBLE_FB
-//     ESP_LOGI(TAG, "Use frame buffers as LVGL draw buffers");
-//     ESP_ERROR_CHECK(esp_lcd_rgb_panel_get_frame_buffer(panel_handle, 2, &buf1, &buf2));
-//     // set LVGL draw buffers and direct mode
-//     lv_display_set_buffers(display, buf1, buf2, EXAMPLE_LCD_H_RES * EXAMPLE_LCD_V_RES * EXAMPLE_PIXEL_SIZE, LV_DISPLAY_RENDER_MODE_DIRECT);
-// #else
-//     ESP_LOGI(TAG, "Allocate LVGL draw buffers");
-//     // it's recommended to allocate the draw buffer from internal memory, for better performance
-//     size_t draw_buffer_sz = EXAMPLE_LCD_H_RES * EXAMPLE_LVGL_DRAW_BUF_LINES * EXAMPLE_PIXEL_SIZE;
-//     buf1 = esp_lcd_rgb_alloc_draw_buffer(panel_handle, draw_buffer_sz, 0);
-//     assert(buf1);
-//     // set LVGL draw buffers and partial mode
-//     lv_display_set_buffers(display, buf1, buf2, draw_buffer_sz, LV_DISPLAY_RENDER_MODE_PARTIAL);
-// #endif // CONFIG_EXAMPLE_USE_DOUBLE_FB
+    // create draw buffers
+    void *buf1 = NULL;
+    void *buf2 = NULL;
+#if CONFIG_EXAMPLE_USE_DOUBLE_FB
+    ESP_LOGI(TAG, "Use frame buffers as LVGL draw buffers");
+    ESP_ERROR_CHECK(esp_lcd_rgb_panel_get_frame_buffer(panel_handle, 2, &buf1, &buf2));
+    // set LVGL draw buffers and direct mode
+    lv_display_set_buffers(display, buf1, buf2, EXAMPLE_LCD_H_RES * EXAMPLE_LCD_V_RES * EXAMPLE_PIXEL_SIZE, LV_DISPLAY_RENDER_MODE_DIRECT);
+#else
+    ESP_LOGI(TAG, "Allocate LVGL draw buffers");
+    // it's recommended to allocate the draw buffer from internal memory, for better performance
+    size_t draw_buffer_sz = EXAMPLE_LCD_H_RES * EXAMPLE_LVGL_DRAW_BUF_LINES * EXAMPLE_PIXEL_SIZE;
+    buf1 = esp_lcd_rgb_alloc_draw_buffer(panel_handle, draw_buffer_sz, 0);
+    assert(buf1);
+    // set LVGL draw buffers and partial mode
+    lv_display_set_buffers(display, buf1, buf2, draw_buffer_sz, LV_DISPLAY_RENDER_MODE_PARTIAL);
+#endif // CONFIG_EXAMPLE_USE_DOUBLE_FB
 
-//     // set the callback which can copy the rendered image to an area of the display
-//     lv_display_set_flush_cb(display, example_lvgl_flush_cb);
+    // set the callback which can copy the rendered image to an area of the display
+    lv_display_set_flush_cb(display, example_lvgl_flush_cb);
 
-//     ESP_LOGI(TAG, "Register event callbacks");
-//     esp_lcd_rgb_panel_event_callbacks_t cbs = {
-//         .on_color_trans_done = example_notify_lvgl_flush_ready,
-//     };
-//     ESP_ERROR_CHECK(esp_lcd_rgb_panel_register_event_callbacks(panel_handle, &cbs, display));
+    ESP_LOGI(TAG, "Register event callbacks");
+    esp_lcd_rgb_panel_event_callbacks_t cbs = {
+        .on_color_trans_done = example_notify_lvgl_flush_ready,
+    };
+    ESP_ERROR_CHECK(esp_lcd_rgb_panel_register_event_callbacks(panel_handle, &cbs, display));
 
-//     ESP_LOGI(TAG, "Install LVGL tick timer");
-//     // Tick interface for LVGL (using esp_timer to generate 2ms periodic event)
-//     const esp_timer_create_args_t lvgl_tick_timer_args = {
-//         .callback = &example_increase_lvgl_tick,
-//         .name = "lvgl_tick"
-//     };
-//     esp_timer_handle_t lvgl_tick_timer = NULL;
-//     ESP_ERROR_CHECK(esp_timer_create(&lvgl_tick_timer_args, &lvgl_tick_timer));
-//     ESP_ERROR_CHECK(esp_timer_start_periodic(lvgl_tick_timer, EXAMPLE_LVGL_TICK_PERIOD_MS * 1000));
+    ESP_LOGI(TAG, "Install LVGL tick timer");
+    // Tick interface for LVGL (using esp_timer to generate 2ms periodic event)
+    const esp_timer_create_args_t lvgl_tick_timer_args = {
+        .callback = &example_increase_lvgl_tick,
+        .name = "lvgl_tick"
+    };
+    esp_timer_handle_t lvgl_tick_timer = NULL;
+    ESP_ERROR_CHECK(esp_timer_create(&lvgl_tick_timer_args, &lvgl_tick_timer));
+    ESP_ERROR_CHECK(esp_timer_start_periodic(lvgl_tick_timer, EXAMPLE_LVGL_TICK_PERIOD_MS * 1000));
 
-//     ESP_LOGI(TAG, "Create LVGL task");
-//     xTaskCreate(example_lvgl_port_task, "LVGL", EXAMPLE_LVGL_TASK_STACK_SIZE, NULL, EXAMPLE_LVGL_TASK_PRIORITY, NULL);
+    ESP_LOGI(TAG, "Create LVGL task");
+    xTaskCreate(example_lvgl_port_task, "LVGL", EXAMPLE_LVGL_TASK_STACK_SIZE, NULL, EXAMPLE_LVGL_TASK_PRIORITY, NULL);
 
-//     ESP_LOGI(TAG, "Display LVGL UI");
-//     // Lock the mutex due to the LVGL APIs are not thread-safe
-//     _lock_acquire(&lvgl_api_lock);
-//     example_lvgl_demo_ui(display);
-//     _lock_release(&lvgl_api_lock);
+    ESP_LOGI(TAG, "Display LVGL UI");
+    // Lock the mutex due to the LVGL APIs are not thread-safe
+    _lock_acquire(&lvgl_api_lock);
+    example_lvgl_demo_ui(display);
+    _lock_release(&lvgl_api_lock);
 }

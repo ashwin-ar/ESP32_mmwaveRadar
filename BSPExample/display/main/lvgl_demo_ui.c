@@ -1,189 +1,156 @@
 /*
- * SPDX-FileCopyrightText: 2021-2025 Espressif Systems (Shanghai) CO LTD
+ * SPDX-FileCopyrightText: 2022-2024 Espressif Systems (Shanghai) CO LTD
  *
  * SPDX-License-Identifier: CC0-1.0
  */
 
-#include <math.h>
 #include "lvgl.h"
 
-#ifndef PI
-#define PI  (3.14159f)
-#endif
+static lv_style_t style_bullet;
+static lv_obj_t *scale1;
+static const lv_font_t *font_normal = &lv_font_montserrat_14;
 
-// LVGL image declare
-LV_IMG_DECLARE(esp_logo)
-LV_IMG_DECLARE(esp_text)
-
-typedef struct {
-    lv_obj_t *scr;
-    int count_val;
-} my_timer_context_t;
-
-static lv_obj_t *arc[3];
-static lv_obj_t *img_logo;
-static lv_obj_t *img_text;
-static lv_color_t arc_color[] = {
-    LV_COLOR_MAKE(232, 87, 116),
-    LV_COLOR_MAKE(126, 87, 162),
-    LV_COLOR_MAKE(90, 202, 228),
-};
-
-#if (CONFIG_ESP_LCD_TOUCH_MAX_POINTS > 1 && CONFIG_LV_USE_GESTURE_RECOGNITION)
-void gesture_cb(lv_event_t *e)
+static lv_obj_t *create_scale_box(lv_obj_t *parent, const char *text1, const char *text2, const char *text3)
 {
-    static uint32_t logo_scale = LV_SCALE_NONE;
-    static int32_t logo_rotation = 0;
-    static int32_t logo_offset_x = 0;
-    static int32_t logo_offset_y = 0;
+    lv_obj_t *scale = lv_scale_create(parent);
+    lv_obj_center(scale);
+    lv_obj_set_size(scale, 300, 300);
+    lv_scale_set_mode(scale, LV_SCALE_MODE_ROUND_OUTER);
+    lv_scale_set_label_show(scale, false);
+    lv_scale_set_post_draw(scale, true);
+    lv_obj_set_width(scale, LV_PCT(100));
+    lv_obj_set_style_pad_all(scale, 30, 0);
 
-    lv_indev_gesture_type_t type = lv_event_get_gesture_type(e);
-    lv_indev_gesture_state_t state = lv_event_get_gesture_state(e, type);
+    lv_obj_t *bullet1 = lv_obj_create(parent);
+    lv_obj_set_size(bullet1, 13, 13);
+    lv_obj_remove_style(bullet1, NULL, LV_PART_SCROLLBAR);
+    lv_obj_add_style(bullet1, &style_bullet, 0);
+    lv_obj_set_style_bg_color(bullet1, lv_palette_main(LV_PALETTE_RED), 0);
+    lv_obj_t *label1 = lv_label_create(parent);
+    lv_label_set_text(label1, text1);
 
-    if (state == LV_INDEV_GESTURE_STATE_RECOGNIZED || state == LV_INDEV_GESTURE_STATE_ENDED) {
-        switch (type) {
-        case LV_INDEV_GESTURE_PINCH:
-            // Read current pinch scale and convert it from float to image scale
-            uint32_t pinch_scale_rel = lv_event_get_pinch_scale(e) * LV_SCALE_NONE;
-            // Cutoff negative results at 0
-            uint32_t pinch_scale_abs = logo_scale + pinch_scale_rel < LV_SCALE_NONE ? 0 : logo_scale + ((
-                                           int32_t)pinch_scale_rel - LV_SCALE_NONE);
-            lv_img_set_zoom(img_logo, pinch_scale_abs);
-            // Save the resulting image scale after the gesture ends
-            if (state == LV_INDEV_GESTURE_STATE_ENDED) {
-                logo_scale = pinch_scale_abs;
-            }
-            break;
-        case LV_INDEV_GESTURE_ROTATE:
-            // Get gesture rotation in degrees
-            int32_t rotation_rel = lv_event_get_rotation(e) * (180.0f / M_PI) * 10.0f;
-            // Calculate resulting angle and limit it to 360 degrees
-            int32_t rotation_abs = (logo_rotation + rotation_rel) % 3600;
-            lv_img_set_angle(img_logo, rotation_abs);
-            // Save the resulting image rotation angle after the gesture ends
-            if (state == LV_INDEV_GESTURE_STATE_ENDED) {
-                logo_rotation = rotation_abs;
-            }
-            break;
-        case LV_INDEV_GESTURE_TWO_FINGERS_SWIPE:
-            // Get two finger swipe values
-            lv_dir_t swipe_dir = lv_event_get_two_fingers_swipe_dir(e);
-            float swipe_dist = lv_event_get_two_fingers_swipe_distance(e);
-            int32_t swipe_dist_abs;
-            switch (swipe_dir) {
-            case LV_DIR_BOTTOM:
-            case LV_DIR_TOP:
-                // Vertical offset sign depends on the swipe direction
-                swipe_dist_abs = swipe_dir == LV_DIR_TOP ?
-                                 logo_offset_y - swipe_dist :
-                                 logo_offset_y + swipe_dist;
-                lv_obj_set_pos(img_logo, logo_offset_x, swipe_dist_abs);
-                // Save the resulting vertical image offset after the gesture ends
-                if (state == LV_INDEV_GESTURE_STATE_ENDED) {
-                    logo_offset_y = swipe_dist_abs;
-                }
-                break;
-            case LV_DIR_RIGHT:
-            case LV_DIR_LEFT:
-                // Horizontal offset sign depends on the swipe direction
-                swipe_dist_abs = swipe_dir == LV_DIR_LEFT ?
-                                 logo_offset_x - swipe_dist :
-                                 logo_offset_x + swipe_dist;
-                lv_obj_set_pos(img_logo, swipe_dist_abs, logo_offset_y);
-                // Save the resulting horizontal image offset after the gesture ends
-                if (state == LV_INDEV_GESTURE_STATE_ENDED) {
-                    logo_offset_x = swipe_dist_abs;
-                }
-                break;
-            default:
-                break;
-            }
-            break;
-        default:
-            break;
-        }
-    }
-}
-#endif
+    lv_obj_t *bullet2 = lv_obj_create(parent);
+    lv_obj_set_size(bullet2, 13, 13);
+    lv_obj_remove_style(bullet2, NULL, LV_PART_SCROLLBAR);
+    lv_obj_add_style(bullet2, &style_bullet, 0);
+    lv_obj_set_style_bg_color(bullet2, lv_palette_main(LV_PALETTE_BLUE), 0);
+    lv_obj_t *label2 = lv_label_create(parent);
+    lv_label_set_text(label2, text2);
 
-static void anim_timer_cb(lv_timer_t *timer)
-{
-    my_timer_context_t *timer_ctx = (my_timer_context_t *) lv_timer_get_user_data(timer);
-    int count = timer_ctx->count_val;
-    lv_obj_t *scr = timer_ctx->scr;
+    lv_obj_t *bullet3 = lv_obj_create(parent);
+    lv_obj_set_size(bullet3, 13, 13);
+    lv_obj_remove_style(bullet3,  NULL, LV_PART_SCROLLBAR);
+    lv_obj_add_style(bullet3, &style_bullet, 0);
+    lv_obj_set_style_bg_color(bullet3, lv_palette_main(LV_PALETTE_GREEN), 0);
+    lv_obj_t *label3 = lv_label_create(parent);
+    lv_label_set_text(label3, text3);
 
-    // Play arc animation
-    if (count < 90) {
-        lv_coord_t arc_start = count > 0 ? (1 - cosf(count / 180.0f * PI)) * 270 : 0;
-        lv_coord_t arc_len = (sinf(count / 180.0f * PI) + 1) * 135;
-
-        for (size_t i = 0; i < sizeof(arc) / sizeof(arc[0]); i++) {
-            lv_arc_set_bg_angles(arc[i], arc_start, arc_len);
-            lv_arc_set_rotation(arc[i], (count + 120 * (i + 1)) % 360);
-        }
-    }
-
-    // Delete arcs when animation finished
-    if (count == 90) {
-        for (size_t i = 0; i < sizeof(arc) / sizeof(arc[0]); i++) {
-            lv_obj_del(arc[i]);
-        }
-
-        // Create new image and make it transparent
-        img_text = lv_img_create(scr);
-        lv_img_set_src(img_text, &esp_text);
-        lv_obj_set_style_img_opa(img_text, 0, 0);
-    }
-
-    // Move images when arc animation finished
-    if ((count >= 100) && (count <= 180)) {
-        lv_coord_t offset = (sinf((count - 140) * 2.25f / 90.0f) + 1) * 20.0f;
-        lv_obj_align(img_logo, LV_ALIGN_CENTER, 0, -offset);
-        lv_obj_align(img_text, LV_ALIGN_CENTER, 0, 2 * offset);
-        lv_obj_set_style_img_opa(img_text, offset / 40.0f * 255, 0);
-    }
-
-    // Delete timer when all animation finished
-    if ((count += 5) == 220) {
-        lv_timer_del(timer);
-    } else {
-        timer_ctx->count_val = count;
-    }
+    static int32_t grid_col_dsc[] = {LV_GRID_CONTENT, LV_GRID_FR(1), LV_GRID_TEMPLATE_LAST};
+    static int32_t grid_row_dsc[] = {LV_GRID_CONTENT, LV_GRID_CONTENT, LV_GRID_CONTENT, LV_GRID_CONTENT, LV_GRID_CONTENT, LV_GRID_TEMPLATE_LAST};
+    lv_obj_set_grid_dsc_array(parent, grid_col_dsc, grid_row_dsc);
+    lv_obj_set_grid_cell(scale, LV_GRID_ALIGN_START, 0, 2, LV_GRID_ALIGN_START, 1, 1);
+    lv_obj_set_grid_cell(bullet1, LV_GRID_ALIGN_START, 0, 1, LV_GRID_ALIGN_START, 2, 1);
+    lv_obj_set_grid_cell(bullet2, LV_GRID_ALIGN_START, 0, 1, LV_GRID_ALIGN_START, 3, 1);
+    lv_obj_set_grid_cell(bullet3, LV_GRID_ALIGN_START, 0, 1, LV_GRID_ALIGN_START, 4, 1);
+    lv_obj_set_grid_cell(label1, LV_GRID_ALIGN_STRETCH, 1, 1, LV_GRID_ALIGN_START, 2, 1);
+    lv_obj_set_grid_cell(label2, LV_GRID_ALIGN_STRETCH, 1, 1, LV_GRID_ALIGN_START, 3, 1);
+    lv_obj_set_grid_cell(label3, LV_GRID_ALIGN_STRETCH, 1, 1, LV_GRID_ALIGN_START, 4, 1);
+    return scale;
 }
 
-void example_lvgl_demo_ui(lv_obj_t *scr)
+static void scale1_indic1_anim_cb(void *var, int32_t v)
 {
-    // Create image
-    img_logo = lv_img_create(scr);
-    lv_img_set_src(img_logo, &esp_logo);
-    lv_obj_center(img_logo);
+    lv_arc_set_value(var, v);
 
-#if (CONFIG_ESP_LCD_TOUCH_MAX_POINTS > 1 && CONFIG_LV_USE_GESTURE_RECOGNITION)
-    lv_obj_add_event_cb(scr, gesture_cb, LV_EVENT_GESTURE, NULL);
-#endif
+    lv_obj_t *card = lv_obj_get_parent(scale1);
+    lv_obj_t *label = lv_obj_get_child(card, -5);
+    lv_label_set_text_fmt(label, "Revenue: %"LV_PRId32" %%", v);
+}
 
-    // Create arcs
-    for (size_t i = 0; i < sizeof(arc) / sizeof(arc[0]); i++) {
-        arc[i] = lv_arc_create(scr);
+static void scale1_indic2_anim_cb(void *var, int32_t v)
+{
+    lv_arc_set_value(var, v);
 
-        // Set arc caption
-        lv_obj_set_size(arc[i], 220 - 30 * i, 220 - 30 * i);
-        lv_arc_set_bg_angles(arc[i], 120 * i, 10 + 120 * i);
-        lv_arc_set_value(arc[i], 0);
+    lv_obj_t *card = lv_obj_get_parent(scale1);
+    lv_obj_t *label = lv_obj_get_child(card, -3);
+    lv_label_set_text_fmt(label, "Sales: %"LV_PRId32" %%", v);
+}
 
-        // Set arc style
-        lv_obj_remove_style(arc[i], NULL, LV_PART_KNOB);
-        lv_obj_set_style_arc_width(arc[i], 10, 0);
-        lv_obj_set_style_arc_color(arc[i], arc_color[i], 0);
+static void scale1_indic3_anim_cb(void *var, int32_t v)
+{
+    lv_arc_set_value(var, v);
 
-        // Make arc center
-        lv_obj_center(arc[i]);
-    }
+    lv_obj_t *card = lv_obj_get_parent(scale1);
+    lv_obj_t *label = lv_obj_get_child(card, -1);
+    lv_label_set_text_fmt(label, "Costs: %"LV_PRId32" %%", v);
+}
 
-    // Create timer for animation
-    static my_timer_context_t my_tim_ctx = {
-        .count_val = -90,
-    };
-    my_tim_ctx.scr = scr;
-    lv_timer_create(anim_timer_cb, 20, &my_tim_ctx);
+void example_lvgl_demo_ui(lv_display_t *disp)
+{
+    // init default theme
+    lv_theme_default_init(disp, lv_palette_main(LV_PALETTE_BLUE), lv_palette_main(LV_PALETTE_RED), LV_THEME_DEFAULT_DARK,
+                          font_normal);
+    // bullet style
+    lv_style_init(&style_bullet);
+    lv_style_set_border_width(&style_bullet, 0);
+    lv_style_set_radius(&style_bullet, LV_RADIUS_CIRCLE);
+
+    lv_obj_t *parent = lv_display_get_screen_active(disp);
+
+    // create scale widget
+    scale1 = create_scale_box(parent, "Revenue", "Sales", "Costs");
+
+    // create arc indicators
+    lv_obj_t *arc;
+    arc = lv_arc_create(scale1);
+    lv_obj_remove_style(arc, NULL, LV_PART_KNOB);
+    lv_obj_remove_style(arc, NULL, LV_PART_MAIN);
+    lv_obj_set_size(arc, lv_pct(100), lv_pct(100));
+    lv_obj_set_style_arc_opa(arc, 0, 0);
+    lv_obj_set_style_arc_width(arc, 15, LV_PART_INDICATOR);
+    lv_obj_set_style_arc_color(arc, lv_palette_main(LV_PALETTE_BLUE), LV_PART_INDICATOR);
+    lv_obj_remove_flag(arc, LV_OBJ_FLAG_CLICKABLE);
+
+    // animation
+    lv_anim_t a;
+    lv_anim_init(&a);
+    lv_anim_set_values(&a, 20, 100);
+    lv_anim_set_repeat_count(&a, LV_ANIM_REPEAT_INFINITE);
+    lv_anim_set_exec_cb(&a, scale1_indic1_anim_cb);
+    lv_anim_set_var(&a, arc);
+    lv_anim_set_duration(&a, 4100);
+    lv_anim_set_playback_duration(&a, 2700);
+    lv_anim_start(&a);
+
+    arc = lv_arc_create(scale1);
+    lv_obj_remove_style(arc, NULL, LV_PART_KNOB);
+    lv_obj_set_size(arc, lv_pct(100), lv_pct(100));
+    lv_obj_set_style_margin_all(arc, 20, 0);
+    lv_obj_set_style_arc_opa(arc, 0, 0);
+    lv_obj_set_style_arc_width(arc, 15, LV_PART_INDICATOR);
+    lv_obj_set_style_arc_color(arc, lv_palette_main(LV_PALETTE_RED), LV_PART_INDICATOR);
+    lv_obj_remove_flag(arc, LV_OBJ_FLAG_CLICKABLE);
+    lv_obj_center(arc);
+
+    lv_anim_set_exec_cb(&a, scale1_indic2_anim_cb);
+    lv_anim_set_var(&a, arc);
+    lv_anim_set_duration(&a, 2600);
+    lv_anim_set_playback_duration(&a, 3200);
+    lv_anim_start(&a);
+
+    arc = lv_arc_create(scale1);
+    lv_obj_remove_style(arc, NULL, LV_PART_KNOB);
+    lv_obj_set_size(arc, lv_pct(100), lv_pct(100));
+    lv_obj_set_style_margin_all(arc, 40, 0);
+    lv_obj_set_style_arc_opa(arc, 0, 0);
+    lv_obj_set_style_arc_width(arc, 15, LV_PART_INDICATOR);
+    lv_obj_set_style_arc_color(arc, lv_palette_main(LV_PALETTE_GREEN), LV_PART_INDICATOR);
+    lv_obj_remove_flag(arc, LV_OBJ_FLAG_CLICKABLE);
+    lv_obj_center(arc);
+
+    lv_anim_set_exec_cb(&a, scale1_indic3_anim_cb);
+    lv_anim_set_var(&a, arc);
+    lv_anim_set_duration(&a, 2800);
+    lv_anim_set_playback_duration(&a, 1800);
+    lv_anim_start(&a);
 }
