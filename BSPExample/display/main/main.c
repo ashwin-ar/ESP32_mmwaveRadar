@@ -16,7 +16,7 @@
 #include "lvgl.h"
 #include "esp_log.h"
 
-extern void example_lvgl_demo_ui(lv_obj_t *scr);
+extern void lv_example_chart_scatter(void);
 
 void app_main(void)
 {
@@ -29,8 +29,7 @@ void app_main(void)
     lv_indev_t *indev = bsp_display_get_input_dev();
     lv_indev_set_rotation_rad_threshold(indev, 0.15f);
 #endif
-    example_lvgl_demo_ui(scr);
-
+    lv_example_chart_scatter();
     bsp_display_unlock();
-    bsp_display_backlight_on();
+    //@note: removed BLK, as there is no backight here.  
 }
