@@ -17,6 +17,7 @@
 #include "esp_log.h"
 
 extern void lv_example_chart_scatter(void);
+extern void chart_add_custom_point(int32_t, int32_t, lv_color_t);
 
 void app_main(void)
 {
@@ -30,6 +31,10 @@ void app_main(void)
     lv_indev_set_rotation_rad_threshold(indev, 0.15f);
 #endif
     lv_example_chart_scatter();
+    chart_add_custom_point(25, 45, lv_palette_main(LV_PALETTE_GREEN));
+    chart_add_custom_point(-70, -10, lv_color_hex(0xFF5733)); // Custom Hex Orange
+    chart_add_custom_point(50, -85, lv_color_black());
+
     bsp_display_unlock();
     //@note: removed BLK, as there is no backight here.  
 }
